@@ -9,6 +9,7 @@ namespace MiddleClickDefinition.Shared.Options
         GoToImplementation,
         FindReferences,
         FindInFiles,
+		Contextual,
     }
 
     public static class CommandSettingDisplayName
@@ -19,5 +20,6 @@ namespace MiddleClickDefinition.Shared.Options
         public const string GoToImplementation = "Go To Implementation";
         public const string FindReferences = "Find References";
         public const string FindInFiles = "Find In Files";
+        public const string Contextual = "Contextual";
     }
 }

@@ -57,33 +57,33 @@ namespace MiddleClickDefinition.Shared.Mouse
 
                 if (!InDragOperation(_mouseDownAnchorPoint.Value, currentMousePosition))
                 {
-                    if (IsSignificantElement(RelativeToView(e.GetPosition(_view.VisualElement))))
+                    if (IsSignificantElement(RelativeToView(e.GetPosition(_view.VisualElement)), out string classification))
                     {
                         switch (_state.ModifierKey)
                         {
                             case ModifierKeyState.None:
-                                DispatchCommand(_options.MiddleClick());
+                                DispatchCommand(_options.MiddleClick(), classification);
                                 break;
                             case ModifierKeyState.Ctrl:
-                                DispatchCommand(_options.CtrlMiddleClick());
+                                DispatchCommand(_options.CtrlMiddleClick(), classification);
                                 break;
                             case ModifierKeyState.Shift:
-                                DispatchCommand(_options.ShiftMiddleClick());
+                                DispatchCommand(_options.ShiftMiddleClick(), classification);
                                 break;
                             case ModifierKeyState.Alt:
-                                DispatchCommand(_options.AltMiddleClick());
+                                DispatchCommand(_options.AltMiddleClick(), classification);
                                 break;
                             case ModifierKeyState.CtrlShift:
-                                DispatchCommand(_options.CtrlShiftMiddleClick());
+                                DispatchCommand(_options.CtrlShiftMiddleClick(), classification);
                                 break;
                             case ModifierKeyState.AltShift:
-                                DispatchCommand(_options.AltShiftMiddleClick());
+                                DispatchCommand(_options.AltShiftMiddleClick(), classification);
                                 break;
                             case ModifierKeyState.CtrlAlt:
-                                DispatchCommand(_options.CtrlAltMiddleClick());
+                                DispatchCommand(_options.CtrlAltMiddleClick(), classification);
                                 break;
                             case ModifierKeyState.CtrlAltShift:
-                                DispatchCommand(_options.CtrlAltShiftMiddleClick());
+                                DispatchCommand(_options.CtrlAltShiftMiddleClick(), classification);
                                 break;
                         }
 
@@ -113,7 +113,7 @@ namespace MiddleClickDefinition.Shared.Mouse
                 _view.Caret.MoveTo(line, position.X);
 
                 _mouseDownAnchorPoint = RelativeToView(e.GetPosition(_view.VisualElement));
-                IsSignificantElement(RelativeToView(e.GetPosition(_view.VisualElement)));
+                IsSignificantElement(RelativeToView(e.GetPosition(_view.VisualElement)), out string classificationOut);
             }
         }
 
@@ -126,9 +126,10 @@ namespace MiddleClickDefinition.Shared.Mouse
         private Point RelativeToView(Point position)
             => new Point(position.X + _view.ViewportLeft, position.Y + _view.ViewportTop);
 
-        private bool IsSignificantElement(Point position)
+        private bool IsSignificantElement(Point position, out string classificationOut)
         {
-            try
+			classificationOut = "";
+			try
             {
                 var line = _view.TextViewLines.GetTextViewLineContainingYCoordinate(position.Y);
                 if (line == null)
@@ -155,12 +156,14 @@ namespace MiddleClickDefinition.Shared.Mouse
                     var name = classification.ClassificationType.Classification.ToLower();
                     if (name.Contains("identifier")
                         || name.Contains("user types")
+                        || name.Contains(" name")
                         || (name.Contains("keyword")
                             && IsAppropriateKeyword(classification.Span.GetText())
                             && _view.TextBuffer.ContentType.IsOfType("csharp"))
                         )
                     {
-                        return true;
+						classificationOut = name;
+						return true;
                     }
                 }
 
@@ -203,7 +206,7 @@ namespace MiddleClickDefinition.Shared.Mouse
             return false;
         }
 
-        private void DispatchCommand(CommandSetting cmdSetting)
+        private void DispatchCommand(CommandSetting cmdSetting, string classification = "")
         {
             switch (cmdSetting)
             {
@@ -227,6 +230,13 @@ namespace MiddleClickDefinition.Shared.Mouse
                 case CommandSetting.FindReferences:
                     ExecuteCommand(VSConstants.GUID_VSStandardCommandSet97, (uint)VSConstants.VSStd97CmdID.FindReferences);
                     break;
+
+				case CommandSetting.Contextual:
+                    if (classification.Contains(" name"))
+                        ExecuteCommand(VSConstants.GUID_VSStandardCommandSet97, (uint)VSConstants.VSStd97CmdID.FindReferences);
+                    else
+                        ExecuteCommand(VSConstants.GUID_VSStandardCommandSet97, (uint)VSConstants.VSStd97CmdID.GotoDefn);
+					break;
 
                 case CommandSetting.Nothing:
                     //nothing
